@@ -13,13 +13,20 @@
     </el-header>
     <!-- 侧边导航栏 -->
     <el-container>
-      <el-aside width="200px">
+      <!-- 侧边栏折叠展开 -->
+      <el-aside :width="isCollapse ? '64px' : '200px'">
         <el-menu
           background-color="#545c64"
           text-color="#fff"
           active-text-color="#409EFF"
           :unique-opened="true"
+          :collapse="isCollapse"
+          :collapse-transition="false"
+          router
+          default-active="activePath"
         >
+          <!-- 折叠功能 -->
+          <div class="collapse" @click="Collapse">|||</div>
           <!-- 一级菜单 -->
           <el-submenu
             :index="item.id + ''"
@@ -35,7 +42,8 @@
             <!-- 二级菜单 -->
             <!-- 二级菜单渲染一级菜单的children属性 -->
             <el-menu-item
-              :index="item1.id + ''"
+              @click="saveNavState('/' + item1.path)"
+              :index="'/' + item1.path"
               v-for="item1 in item.children"
               :key="item1.id"
             >
@@ -49,8 +57,8 @@
           </el-submenu>
         </el-menu>
       </el-aside>
-
-      <el-main>Main</el-main>
+      <!-- main区域 -->
+      <el-main><router-view></router-view></el-main>
     </el-container>
   </el-container>
 </template>
@@ -68,11 +76,16 @@ export default {
         102: "iconfont icon-danju",
         145: "iconfont icon-baobiao",
       },
+      //是否折叠
+      isCollapse: false,
+      //活动路径
+      activePath: "",
     };
   },
   //   钩子函数，创建完成时调用getMenuList函数
   created() {
     this.getMenuList();
+    this.activePath = window.sessionStorage.getItem("activePath");
   },
   methods: {
     //   退出按钮功能，清空token，编程式导航到登录页面
@@ -87,7 +100,16 @@ export default {
       if (res.meta.status !== 200) return this.$message.error(res.meta.msg);
       //   得到的data保存到MenuList中
       this.MenuList = res.data;
-      console.log(this.MenuList);
+      // console.log(this.MenuList);
+    },
+    //折叠功能
+    Collapse() {
+      this.isCollapse = !this.isCollapse;
+    },
+    //活动路径
+    saveNavState(path) {
+      window.sessionStorage.setItem("activePath", path);
+      this.activePath = path;
     },
   },
 };
@@ -114,6 +136,18 @@ export default {
 }
 .el-aside {
   background-color: #313743;
+  .el-menu {
+    border-right: 0px;
+
+    .collapse {
+      color: #fff;
+      background-color: #495065;
+      text-align: center;
+      letter-spacing: 0.2em;
+      font-size: 8px;
+      line-height: 20px;
+    }
+  }
   .iconfont {
     margin-right: 10px;
   }
