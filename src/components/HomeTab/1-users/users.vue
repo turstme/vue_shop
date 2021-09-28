@@ -132,7 +132,7 @@
             >
               <!-- 分配角色 -->
               <el-button
-                @click="setting()"
+                @click="setting(scope.row)"
                 type="warning"
                 icon="el-icon-setting"
                 size="mini"
@@ -178,6 +178,30 @@
       <span slot="footer" class="dialog-footer">
         <el-button @click="editDialogVisible = false">取 消</el-button>
         <el-button type="primary" @click="editUser()">确 定</el-button>
+      </span>
+    </el-dialog>
+    <!-- 分配角色对话框 -->
+    <el-dialog
+      title="分配角色"
+      :visible.sync="setRoleDialogVisible"
+      width="50%"
+    >
+      <div>
+        <p>姓名：{{ setRoleForm.username }}</p>
+        <p>角色：{{ setRoleForm.role_name }}</p>
+        <el-select v-model="selectedRoleId" placeholder="请选择">
+          <el-option
+            v-for="item in rolelist"
+            :key="item.id"
+            :label="item.roleName"
+            :value="item.id"
+          >
+          </el-option>
+        </el-select>
+      </div>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="setRoleDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="setRoleConfirm">确 定</el-button>
       </span>
     </el-dialog>
   </div>
@@ -292,6 +316,17 @@ export default {
           { validator: checkMobile, trigger: "blur" },
         ],
       },
+      //分配角色对话框
+      setRoleDialogVisible: false,
+      //分配角色数据
+      setRoleForm: {
+        id: "",
+        username: "",
+        role_name: "",
+      },
+      rolelist: null,
+      //已选中的下拉值
+      selectedRoleId: "",
     };
   },
   created() {
@@ -303,7 +338,7 @@ export default {
       // 根据总的数据条数total和一页显示的数据条数，得到总页数
       let lastPage = Math.ceil(this.total / this.queryInfo.pagesize);
       // 判断当前页是否是最后一页,最后一条数据
-      if (this.queryInfo.pagenum === lastPage && index == 0) {
+      if (this.queryInfo.pagenum === lastPage && index === 0) {
         this.queryInfo.pagenum--;
       }
     },
@@ -352,8 +387,32 @@ export default {
       this.isLastdata(data.$index);
       this.getUsersList();
     },
-    // 分配用户按钮功能
-    setting() {},
+    // 分配角色按钮功能
+    async setting(data) {
+      this.setRoleDialogVisible = true;
+      this.setRoleForm.username = data.username;
+      this.setRoleForm.role_name = data.role_name;
+      this.setRoleForm.id = data.id;
+
+      //获取角色列表
+      const { data: res } = await this.$http.get("roles");
+      if (res.meta.status != 200) return this.$message.error(res.meta.msg);
+      this.rolelist = res.data;
+      console.log(this.rolelist);
+    },
+    // 重分配角色按钮确认按钮功能
+    async setRoleConfirm() {
+      const { data: res } = await this.$http.put(
+        `users/${this.setRoleForm.id}/role`,
+        {
+          rid: this.selectedRoleId,
+        }
+      );
+      if (res.meta.status !== 200) return this.$message.error(res.meta.msg);
+      this.$message.success(res.meta.msg);
+      this.setRoleDialogVisible = false;
+      this.getUsersList();
+    },
     //监听最新的pagesize
     handleSizeChange(newSize) {
       this.queryInfo.pagesize = newSize;
